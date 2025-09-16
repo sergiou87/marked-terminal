@@ -1,5 +1,5 @@
 {
-  "name": "marked-terminal",
+  "name": "marked-terminal-forked",
   "version": "7.3.0",
   "description": "A custom render for marked to output to the Terminal",
   "main": "./index.cjs",
@@ -58,10 +58,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mikaelbr/marked-terminal.git"
+    "url": "https://github.com/sergiou87/marked-terminal-forked.git"
   },
   "bugs": {
-    "url": "https://github.com/mikaelbr/marked-terminal/issues"
+    "url": "https://github.com/sergiou87/marked-terminal-forked/issues"
   },
-  "homepage": "https://github.com/mikaelbr/marked-terminal"
+  "homepage": "https://github.com/sergiou87/marked-terminal-forked"
 }
