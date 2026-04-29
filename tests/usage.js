@@ -45,8 +45,8 @@ defaultOptions.tableOptions = {
   chars: { top: '@@@@TABLE@@@@@' }
 };
 
-function markup(str, gfm = false) {
-  let r = new Renderer(defaultOptions2);
+function markup(str, gfm = false, options = {}) {
+  let r = new Renderer(Object.assign({}, defaultOptions2, options));
   let markedOptions = {
     renderer: r,
     gfm: gfm
@@ -187,9 +187,12 @@ describe('Renderer', function () {
     let before = '';
     let after = '\n\n';
 
-    equal(markup(ul), before + '    * ul item\n' + '    * ul item' + after);
+    equal(markup(ul, false, { width: 80 }), before + '    * ul item\n' + '    * ul item' + after);
 
-    equal(markup(ol), before + '    1. ol item\n' + '    2. ol item' + after);
+    equal(
+      markup(ol, false, { width: 80 }),
+      before + '    1. ol item\n' + '    2. ol item' + after
+    );
   });
 
   it('should render nested lists', function () {
@@ -200,20 +203,20 @@ describe('Renderer', function () {
     let before = '';
     let after = '\n\n';
 
-    equal(markup(ul), before + '    * ul item\n' + '        * ul item' + after);
+    equal(markup(ul, false, { width: 80 }), before + '    * ul item\n' + '        * ul item' + after);
 
     equal(
-      markup(ol),
+      markup(ol, false, { width: 80 }),
       before + '    1. ol item\n' + '        1. ol item' + after
     );
 
     equal(
-      markup(olul),
+      markup(olul, false, { width: 80 }),
       before + '    1. ol item\n' + '        * ul item' + after
     );
 
     equal(
-      markup(ulol),
+      markup(ulol, false, { width: 80 }),
       before + '    * ul item\n' + '        1. ol item' + after
     );
   });
@@ -224,7 +227,7 @@ describe('Renderer', function () {
     let after = '\n\n';
 
     equal(
-      markup(tasks),
+      markup(tasks, false, { width: 80 }),
       before + '    * [ ] task item\n' + '    * [X] task item' + after
     );
   });
