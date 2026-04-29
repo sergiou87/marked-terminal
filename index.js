@@ -153,6 +153,12 @@ Renderer.prototype.list = function (body, ordered) {
 };
 
 Renderer.prototype.listitem = function (text) {
+  // Tracks whether the rendered child output (independent of any
+  // synthetic separators we inject) contains `\n`. The `isNested`
+  // decision below uses this so synthetic separators don't suppress
+  // the inline transform pass (emoji expansion, entity unescape,
+  // custom `o.listitem`).
+  var renderedChildHasNewline = false;
   if (typeof text === 'object') {
     const item = text;
     text = '';
@@ -181,11 +187,43 @@ Renderer.prototype.listitem = function (text) {
       }
     }
 
-    text += this.parser.parse(item.tokens, !!item.loose);
+    // When a child token of the types in
+    // `BLOCK_TYPES_NEEDING_LISTITEM_SEPARATOR` follows an inline `text`
+    // sibling in a TIGHT list item, the upstream
+    // `parser.parse(item.tokens, false)` concatenates child outputs
+    // without a separator. The block's first character (`┌`, `>`, code
+    // text, `# heading`, `---`, `<div>`) ends up glued to the prose,
+    // which the terminal then visually wraps high above the rest of
+    // the block (most catastrophic for tables — a "floating" top
+    // border).
+    //
+    // We fix this by pre-inserting a synthetic empty `text` token
+    // before each glue point, then making a SINGLE `parser.parse`
+    // call. marked's text-token coalescing in `Parser.parse` joins
+    // consecutive `text` tokens with `"\n"` between their renderings,
+    // so an empty synthetic text token after a real text token
+    // contributes exactly the `"\n"` we want — no more, no less.
+    //
+    // Loose list items don't need this: marked wraps text tokens in
+    // synthesized paragraphs, and the paragraph renderer's
+    // `section()` adds `"\n\n"` already, naturally separating siblings.
+    //
+    // We deliberately do NOT split before `list` tokens —
+    // `fixNestedLists` (run by the `list` renderer after `o.list`)
+    // handles nested-list separation and requires the sub-list to be
+    // glued to its parent prose here.
+    const tokens = prepareListitemTokens(item.tokens, !!item.loose);
+    text += this.parser.parse(tokens, !!item.loose);
+    renderedChildHasNewline =
+      !!item.loose ||
+      item.tokens.some(childTokenProducesNewline);
+  } else {
+    // Legacy string-input path (pre-marked-v5 API). Fall back to the
+    // historical heuristic: any `\n` in the string suppresses transform.
+    renderedChildHasNewline = text.indexOf('\n') !== -1;
   }
   var transform = compose(this.o.listitem, this.transform);
-  var isNested = text.indexOf('\n') !== -1;
-  if (!isNested) text = transform(text);
+  if (!renderedChildHasNewline) text = transform(text);
 
   // Use BULLET_POINT as a marker for ordered or unordered list item
   return '\n' + BULLET_POINT + text;
@@ -538,6 +576,82 @@ function toSpaces(str) {
 }
 
 var BULLET_POINT = '* ';
+
+const BLOCK_TYPES_NEEDING_LISTITEM_SEPARATOR = new Set([
+  'table',
+  'blockquote',
+  'code',
+  'heading',
+  'hr',
+  'html'
+]);
+
+// Token types whose rendered output naturally contains `\n` (used to
+// decide whether the bottom `transform(text)` pass should run on a
+// list item's assembled text). `list` is included because nested
+// lists always render multi-line; `html` is omitted because its
+// output is source-dependent (handled per-token below).
+const NEWLINE_PRODUCING_LISTITEM_CHILD_TYPES = new Set([
+  'table',
+  'blockquote',
+  'code',
+  'heading',
+  'hr',
+  'list'
+]);
+
+// Returns true if a list-item child token's rendered output naturally
+// contains a `\n` (i.e. independent of any synthetic separator we
+// might insert). Block tokens in `NEWLINE_PRODUCING_LISTITEM_CHILD_TYPES`
+// always do; `text` and `html` tokens do only when their own content
+// has `\n` (multi-line tight prose, hard breaks, multi-line raw HTML).
+function childTokenProducesNewline(tok) {
+  if (NEWLINE_PRODUCING_LISTITEM_CHILD_TYPES.has(tok.type)) return true;
+  if (
+    (tok.type === 'text' || tok.type === 'html') &&
+    typeof tok.text === 'string' &&
+    tok.text.indexOf('\n') !== -1
+  ) {
+    return true;
+  }
+  return false;
+}
+
+// Pre-process a list item's child tokens for the tight-list separator
+// fix: insert a synthetic empty `text` token before each child of a
+// "block" type that immediately follows a (non-space) `text` sibling.
+// marked's text-token coalescing in `Parser.parse` joins consecutive
+// `text` tokens with `"\n"`, so the synthetic contributes exactly the
+// `"\n"` that prevents the next block's first character (`┌`, `<`,
+// `---`, etc.) from being glued to the prose. Loose list items skip
+// this entirely because marked wraps text in synthesized paragraphs
+// whose section trailing `"\n\n"` already separates siblings.
+function prepareListitemTokens(tokens, loose) {
+  if (loose) return tokens;
+  const out = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+    if (BLOCK_TYPES_NEEDING_LISTITEM_SEPARATOR.has(tok.type)) {
+      // Find the last non-space sibling to decide whether we need to
+      // insert a separator. Marked's `space` tokens render as `""`,
+      // so they don't actually separate siblings visually; treat them
+      // as transparent.
+      let prev = null;
+      for (let j = out.length - 1; j >= 0; j--) {
+        if (out[j].type !== 'space') {
+          prev = out[j];
+          break;
+        }
+      }
+      if (prev && prev.type === 'text') {
+        out.push({ type: 'text', raw: '', text: '', escaped: true });
+      }
+    }
+    out.push(tok);
+  }
+  return out;
+}
+
 function bulletPointLine(indent, line) {
   return isPointedLine(line, indent) ? line : toSpaces(BULLET_POINT) + line;
 }
