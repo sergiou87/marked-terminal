@@ -247,6 +247,29 @@ describe('List item children: separators between inline prose and block tokens',
     }
   });
 
+  it('restores list item prefix width when a list item formatter throws', function () {
+    resetMarked();
+    const extension = markedTerminal({
+      listitem: () => {
+        throw new Error('formatter failed');
+      },
+      reflowText: true,
+      width: 40
+    });
+    marked.use(extension);
+
+    let threw = false;
+    try {
+      marked.parse('- item');
+    } catch (err) {
+      threw = true;
+      match(err.message, /formatter failed/);
+    }
+
+    ok(threw, 'expected formatter to throw');
+    equal(extension.renderer.listItemPrefixWidth, undefined);
+  });
+
   it('does not duplicate task-checkbox text when the same markdown is rendered twice', function () {
     const md = '- [x] Done **task**\n';
 

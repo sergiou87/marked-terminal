@@ -151,12 +151,15 @@ Renderer.prototype.list = function (body, ordered) {
       for (let j = 0; j < listToken.items.length; j++) {
         const itemNumber = (start ?? 1) + j;
         const previousListItemPrefixWidth = this.listItemPrefixWidth;
-        this.listItemPrefixWidth =
-          this.listDepth === 1
-            ? textLength(this.tab) + textLength(ordered ? numberedPoint(itemNumber) : BULLET_POINT)
-            : undefined;
-        body += this.listitem(listToken.items[j]);
-        this.listItemPrefixWidth = previousListItemPrefixWidth;
+        try {
+          this.listItemPrefixWidth =
+            this.listDepth === 1
+              ? textLength(this.tab) + textLength(ordered ? numberedPoint(itemNumber) : BULLET_POINT)
+              : undefined;
+          body += this.listitem(listToken.items[j]);
+        } finally {
+          this.listItemPrefixWidth = previousListItemPrefixWidth;
+        }
       }
     } finally {
       this.listDepth = previousListDepth;
