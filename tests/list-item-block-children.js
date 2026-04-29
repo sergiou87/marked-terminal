@@ -224,10 +224,37 @@ describe('List item children: separators between inline prose and block tokens',
 
     const out = render(md, { width: 16, reflowText: true });
 
-    for (const line of out.trimEnd().split('\n')) {
-      ok(line.length <= 16, `expected line to fit width 16, got ${line.length}: ${JSON.stringify(line)}`);
-      doesNotMatch(line, /[ \t]$/, `expected no trailing whitespace: ${JSON.stringify(line)}`);
-    }
+    equal(
+      out,
+      [
+        '    1. This is a',
+        '       very long',
+        '       ordered-l',
+        '       ist item',
+        '       that',
+        '       should',
+        '       wrap onto',
+        '       multiple',
+        '       physical',
+        '       terminal',
+        '       lines.',
+        '    2. This is',
+        '       another',
+        '       very long',
+        '       ordered-l',
+        '       ist item',
+        '       that',
+        '       should',
+        '       also wrap',
+        '       onto',
+        '       multiple',
+        '       physical',
+        '       terminal',
+        '       lines.',
+        '',
+        ''
+      ].join('\n')
+    );
   });
 
   it('reflows styled ordered list items without gluing inline spans or splitting decimals', function () {
