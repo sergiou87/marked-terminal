@@ -274,6 +274,55 @@ describe('List item children: separators between inline prose and block tokens',
     }
   });
 
+  it('reflows nested unordered list items to the final rendered width', function () {
+    const md = [
+      '- parent item',
+      '  - nested item with even more words that should also wrap nicely please because it is much too long'
+    ].join('\n');
+
+    const out = render(md, { width: 30, reflowText: true });
+
+    equal(
+      out,
+      [
+        '    * parent item',
+        '        * nested item with',
+        '            even more words',
+        '            that should also',
+        '            wrap nicely please',
+        '            because it is much',
+        '            too long',
+        '',
+        ''
+      ].join('\n')
+    );
+  });
+
+  it('reflows nested ordered list items to the final rendered width', function () {
+    const md = [
+      '1. parent item',
+      '   1. nested item with even more words that should also wrap nicely please because it is much too long'
+    ].join('\n');
+
+    const out = render(md, { width: 30, reflowText: true });
+
+    equal(
+      out,
+      [
+        '    1. parent item',
+        '        1. nested item with',
+        '              even more words',
+        '              that should also',
+        '              wrap nicely',
+        '              please because',
+        '              it is much too',
+        '              long',
+        '',
+        ''
+      ].join('\n')
+    );
+  });
+
   it('restores list item prefix width when a list item formatter throws', function () {
     resetMarked();
     const extension = markedTerminal({

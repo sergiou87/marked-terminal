@@ -152,10 +152,7 @@ Renderer.prototype.list = function (body, ordered) {
         const itemNumber = (start ?? 1) + j;
         const previousListItemPrefixWidth = this.listItemPrefixWidth;
         try {
-          this.listItemPrefixWidth =
-            this.listDepth === 1
-              ? textLength(this.tab) + textLength(ordered ? numberedPoint(itemNumber) : BULLET_POINT)
-              : undefined;
+          this.listItemPrefixWidth = textLength(this.tab) + textLength(ordered ? numberedPoint(itemNumber) : BULLET_POINT);
           body += this.listitem(listToken.items[j]);
         } finally {
           this.listItemPrefixWidth = previousListItemPrefixWidth;
