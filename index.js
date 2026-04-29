@@ -546,7 +546,7 @@ function indentify(indent, text) {
 }
 
 var BULLET_POINT_REGEX = '\\*';
-var NUMBERED_POINT_REGEX = '\\d+\\.';
+var NUMBERED_POINT_REGEX = '\\d+\\. ';
 var POINT_REGEX =
   '(?:' + [BULLET_POINT_REGEX, NUMBERED_POINT_REGEX].join('|') + ')';
 
