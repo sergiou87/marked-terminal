@@ -203,20 +203,20 @@ describe('Renderer', function () {
     let before = '';
     let after = '\n\n';
 
-    equal(markup(ul), before + '    * ul item\n' + '        * ul item' + after);
+    equal(markup(ul, false, { width: 80 }), before + '    * ul item\n' + '        * ul item' + after);
 
     equal(
-      markup(ol),
+      markup(ol, false, { width: 80 }),
       before + '    1. ol item\n' + '        1. ol item' + after
     );
 
     equal(
-      markup(olul),
+      markup(olul, false, { width: 80 }),
       before + '    1. ol item\n' + '        * ul item' + after
     );
 
     equal(
-      markup(ulol),
+      markup(ulol, false, { width: 80 }),
       before + '    * ul item\n' + '        1. ol item' + after
     );
   });
