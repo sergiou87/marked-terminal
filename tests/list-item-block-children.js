@@ -161,6 +161,14 @@ describe('List item children: separators between inline prose and block tokens',
     equal(out, '    3. Starts at three.\n\n');
   });
 
+  it('preserves zero as an ordered list start value', function () {
+    const md = ['0. Starts at zero.', '1. Continues at one.'].join('\n');
+
+    const out = render(md, { width: 80, reflowText: false });
+
+    equal(out, '    0. Starts at zero.\n    1. Continues at one.\n\n');
+  });
+
   it('reflows long tight ordered list items without blank lines', function () {
     const md = [
       '1. This is a long ordered-list item with many words that should reflow across multiple lines.',

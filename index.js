@@ -140,7 +140,7 @@ Renderer.prototype.list = function (body, ordered) {
   let start = 1;
   if (typeof body === 'object') {
     const listToken = body;
-    start = listToken.start || 1;
+    start = listToken.start ?? 1;
     const loose = listToken.loose;
 
     ordered = listToken.ordered;
@@ -149,7 +149,7 @@ Renderer.prototype.list = function (body, ordered) {
     this.listDepth = previousListDepth + 1;
     try {
       for (let j = 0; j < listToken.items.length; j++) {
-        const itemNumber = (start || 1) + j;
+        const itemNumber = (start ?? 1) + j;
         const previousListItemPrefixWidth = this.listItemPrefixWidth;
         this.listItemPrefixWidth =
           this.listDepth === 1
@@ -719,7 +719,7 @@ function numberedLine(indent, line, num) {
 
 function numberedLines(lines, indent, start) {
   var transform = numberedLine.bind(null, indent);
-  let num = (start || 1) - 1;
+  let num = (start ?? 1) - 1;
   return lines
     .split('\n')
     .filter(identity)
