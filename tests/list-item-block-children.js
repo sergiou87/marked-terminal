@@ -153,6 +153,14 @@ describe('List item children: separators between inline prose and block tokens',
     equal(out, '    1. Peer harnesses get 33.3%. Almost certainly a config bug.\n\n');
   });
 
+  it('preserves ordered list start values when rendering object tokens', function () {
+    const md = '3. Starts at three.';
+
+    const out = render(md, { width: 80, reflowText: false });
+
+    equal(out, '    3. Starts at three.\n\n');
+  });
+
   it('does not duplicate task-checkbox text when the same markdown is rendered twice', function () {
     const md = '- [x] Done **task**\n';
 

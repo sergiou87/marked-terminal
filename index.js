@@ -137,9 +137,10 @@ Renderer.prototype.hr = function () {
 };
 
 Renderer.prototype.list = function (body, ordered) {
+  let start = 1;
   if (typeof body === 'object') {
     const listToken = body;
-    const start = listToken.start;
+    start = listToken.start || 1;
     const loose = listToken.loose;
 
     ordered = listToken.ordered;
@@ -148,7 +149,7 @@ Renderer.prototype.list = function (body, ordered) {
       body += this.listitem(listToken.items[j]);
     }
   }
-  body = this.o.list(body, ordered, this.tab);
+  body = this.o.list(body, ordered, this.tab, start);
   return section(fixNestedLists(indentLines(this.tab, body), this.tab));
 };
 
@@ -676,9 +677,9 @@ function numberedLine(indent, line, num) {
       };
 }
 
-function numberedLines(lines, indent) {
+function numberedLines(lines, indent, start) {
   var transform = numberedLine.bind(null, indent);
-  let num = 0;
+  let num = (start || 1) - 1;
   return lines
     .split('\n')
     .filter(identity)
@@ -691,9 +692,9 @@ function numberedLines(lines, indent) {
     .join('\n');
 }
 
-function list(body, ordered, indent) {
+function list(body, ordered, indent, start) {
   body = body.trim();
-  body = ordered ? numberedLines(body, indent) : bulletPointLines(body, indent);
+  body = ordered ? numberedLines(body, indent, start) : bulletPointLines(body, indent);
   return body;
 }
 
