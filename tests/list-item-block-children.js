@@ -161,6 +161,84 @@ describe('List item children: separators between inline prose and block tokens',
     equal(out, '    3. Starts at three.\n\n');
   });
 
+  it('reflows long tight ordered list items without blank lines', function () {
+    const md = [
+      '1. This is a long ordered-list item with many words that should reflow across multiple lines.',
+      '2. Another long ordered-list item with many words that should reflow across multiple lines.'
+    ].join('\n');
+
+    const out = render(md, { width: 40, reflowText: true });
+
+    equal(
+      out,
+      [
+        '    1. This is a long ordered-list item',
+        '       with many words that should',
+        '       reflow across multiple lines.',
+        '    2. Another long ordered-list item',
+        '       with many words that should',
+        '       reflow across multiple lines.',
+        '',
+        ''
+      ].join('\n')
+    );
+  });
+
+  it('reflows long tight unordered list items without blank lines', function () {
+    const md = [
+      '- This is a long unordered-list item with many words that should reflow across multiple lines.',
+      '- Another long unordered-list item with many words that should reflow across multiple lines.'
+    ].join('\n');
+
+    const out = render(md, { width: 40, reflowText: true });
+
+    equal(
+      out,
+      [
+        '    * This is a long unordered-list item',
+        '      with many words that should reflow',
+        '      across multiple lines.',
+        '    * Another long unordered-list item',
+        '      with many words that should reflow',
+        '      across multiple lines.',
+        '',
+        ''
+      ].join('\n')
+    );
+  });
+
+  it('reflows loose ordered list items to the final rendered width without trailing-space lines', function () {
+    const md = [
+      '1. This is a very long ordered-list item that should wrap onto multiple physical terminal lines.',
+      '',
+      '2. This is another very long ordered-list item that should also wrap onto multiple physical terminal lines.'
+    ].join('\n');
+
+    const out = render(md, { width: 16, reflowText: true });
+
+    for (const line of out.trimEnd().split('\n')) {
+      ok(line.length <= 16, `expected line to fit width 16, got ${line.length}: ${JSON.stringify(line)}`);
+      doesNotMatch(line, /[ \t]$/, `expected no trailing whitespace: ${JSON.stringify(line)}`);
+    }
+  });
+
+  it('reflows styled ordered list items without gluing inline spans or splitting decimals', function () {
+    const md =
+      '3. **O1 — Fix `swebenchcsharpgeneral0_3_win` 0% / NaN failure** (all three #3). Highest evidence × tractability score: Copilot scores 0% with NaN tokens/time across **all 3 models**, while peer harnesses get 33.3%. Almost certainly a Windows/C# config or path bug. Limited leverage (one cell), but a near-free win.';
+
+    const out = render(md, { width: 80, reflowText: true });
+
+    ok(out.includes('O1 — Fix swebenchcsharpgeneral0_3_win 0%'));
+    ok(out.includes('get 33.3%.'));
+    doesNotMatch(out, /Fixswebench/);
+    doesNotMatch(out, /acrossall/);
+    doesNotMatch(out, /get\n\s+33\.3%/);
+    for (const line of out.trimEnd().split('\n')) {
+      ok(line.length <= 80, `expected line to fit width 80, got ${line.length}: ${JSON.stringify(line)}`);
+      doesNotMatch(line, /[ \t]$/, `expected no trailing whitespace: ${JSON.stringify(line)}`);
+    }
+  });
+
   it('does not duplicate task-checkbox text when the same markdown is rendered twice', function () {
     const md = '- [x] Done **task**\n';
 

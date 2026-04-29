@@ -145,8 +145,21 @@ Renderer.prototype.list = function (body, ordered) {
 
     ordered = listToken.ordered;
     body = '';
-    for (let j = 0; j < listToken.items.length; j++) {
-      body += this.listitem(listToken.items[j]);
+    const previousListDepth = this.listDepth || 0;
+    this.listDepth = previousListDepth + 1;
+    try {
+      for (let j = 0; j < listToken.items.length; j++) {
+        const itemNumber = (start || 1) + j;
+        const previousListItemPrefixWidth = this.listItemPrefixWidth;
+        this.listItemPrefixWidth =
+          this.listDepth === 1
+            ? textLength(this.tab) + textLength(ordered ? numberedPoint(itemNumber) : BULLET_POINT)
+            : undefined;
+        body += this.listitem(listToken.items[j]);
+        this.listItemPrefixWidth = previousListItemPrefixWidth;
+      }
+    } finally {
+      this.listDepth = previousListDepth;
     }
   }
   body = this.o.list(body, ordered, this.tab, start);
@@ -214,7 +227,7 @@ Renderer.prototype.listitem = function (text) {
     // handles nested-list separation and requires the sub-list to be
     // glued to its parent prose here.
     const tokens = prepareListitemTokens(item.tokens, !!item.loose);
-    text += this.parser.parse(tokens, !!item.loose);
+    text += this.parseListItemTokens(tokens, !!item.loose);
     renderedChildHasNewline =
       !!item.loose ||
       item.tokens.some(childTokenProducesNewline);
@@ -224,10 +237,33 @@ Renderer.prototype.listitem = function (text) {
     renderedChildHasNewline = text.indexOf('\n') !== -1;
   }
   var transform = compose(this.o.listitem, this.transform);
-  if (!renderedChildHasNewline) text = transform(text);
+  if (!renderedChildHasNewline) {
+    text = transform(text);
+    if (this.o.reflowText && this.listItemPrefixWidth) {
+      text = reflowText(text, this.listItemContentWidth(), this.options.gfm);
+    }
+  }
 
   // Use BULLET_POINT as a marker for ordered or unordered list item
   return '\n' + BULLET_POINT + text;
+};
+
+Renderer.prototype.listItemContentWidth = function () {
+  return Math.max(1, this.o.width - (this.listItemPrefixWidth || 0));
+};
+
+Renderer.prototype.parseListItemTokens = function (tokens, loose) {
+  if (!this.o.reflowText || !this.listItemPrefixWidth) {
+    return this.parser.parse(tokens, loose);
+  }
+
+  const previousWidth = this.o.width;
+  this.o.width = this.listItemContentWidth();
+  try {
+    return this.parser.parse(tokens, loose);
+  } finally {
+    this.o.width = previousWidth;
+  }
 };
 
 Renderer.prototype.checkbox = function (checked) {
@@ -486,7 +522,7 @@ function reflowText(text, width, gfm) {
           if (word.length <= width) {
             // If the new word is smaller than the required width
             // just add it at the beginning of a new line
-            reflowed.push(currentLine);
+            reflowed.push(trimReflowedLineEnd(currentLine));
             currentLine = word;
             column = word.length;
           } else {
@@ -495,7 +531,7 @@ function reflowText(text, width, gfm) {
             var w = word.substr(0, width - column - addSpace);
             if (addSpace) currentLine += ' ';
             currentLine += w;
-            reflowed.push(currentLine);
+            reflowed.push(trimReflowedLineEnd(currentLine));
             currentLine = '';
             column = 0;
 
@@ -531,10 +567,14 @@ function reflowText(text, width, gfm) {
       fragments.splice(0, 1);
     }
 
-    if (textLength(currentLine)) reflowed.push(currentLine);
+    if (textLength(currentLine)) reflowed.push(trimReflowedLineEnd(currentLine));
   });
 
   return reflowed.join('\n');
+}
+
+function trimReflowedLineEnd(line) {
+  return line.replace(/[ \t]+((?:\u001b\[(?:\d{1,3})(?:;\d{1,3})*m)*)$/, '$1');
 }
 
 function indentLines(indent, text) {
